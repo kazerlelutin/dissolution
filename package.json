@@ -1,0 +1,19 @@
+{
+  "name": "dissolution",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.0.1"
+  },
+  "dependencies": {
+    "@melonjs/debug-plugin": "^14.8.3",
+    "kaplay": "^3001.1.0-beta.0",
+    "melonjs": "^17.4.0"
+  }
+}
