@@ -5,15 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^6.0.1"
+    "typescript": "~5.6.2",
+    "vite": "^6.0.5"
   },
   "dependencies": {
-    "@melonjs/debug-plugin": "^14.8.3",
-    "kaplay": "^3001.1.0-beta.0",
     "melonjs": "^17.4.0"
   }
 }

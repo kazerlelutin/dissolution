@@ -1,12 +1,7 @@
-export default {
-  /**
-   * object where to store game global scole
-   */
+export const game = {
   data: {
-    // score
     score: 0,
+    lives: 3,
   },
-
-  // a reference to the texture atlas
   texture: null,
 }

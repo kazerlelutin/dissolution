@@ -1,27 +1,28 @@
 import * as me from 'melonjs'
-import game from './../game.js'
+import { game } from '../game'
+import { LASER_SIZE } from './poop'
 
-class PlayerEntity extends me.Entity {
-  constructor(x, y, settings) {
-    // Load the texture atlas for truc
-    //call the constructor
-    super(x, y, settings)
+export class Player extends me.Entity {
+  /**
+   * constructor
+   */
 
-    // set a "player object" type
+  constructor(x = 0, y = 0) {
+    // call the super constructor
+    super(x, y, { width: 32, height: 32 })
+
+    this.facingRight = true
+
     this.body.collisionType = me.collision.types.PLAYER_OBJECT
 
-    // player can exit the viewport (jumping, falling into a hole, etc.)
     this.alwaysUpdate = true
-
-    // walking & jumping speed
     this.body.setMaxVelocity(3, 15)
-    this.body.setFriction(0.4, 0)
+    this.body.setFriction(0.7, 0)
 
     this.dying = false
 
     this.multipleJump = 1
 
-    // set the viewport to follow this renderable on both axis, and enable damping
     me.game.viewport.follow(this, me.game.viewport.AXIS.BOTH, 0.1)
 
     // enable keyboard
@@ -32,106 +33,63 @@ class PlayerEntity extends me.Entity {
     me.input.bindKey(me.input.KEY.SPACE, 'jump', true)
     me.input.bindKey(me.input.KEY.DOWN, 'down')
 
+    me.input.bindKey(me.input.KEY.E, 'shoot', true)
+
     me.input.bindKey(me.input.KEY.A, 'left')
     me.input.bindKey(me.input.KEY.D, 'right')
     me.input.bindKey(me.input.KEY.W, 'jump', true)
     me.input.bindKey(me.input.KEY.S, 'down')
 
-    //me.input.registerPointerEvent("pointerdown", this, this.onCollision.bind(this));
-    //me.input.bindPointer(me.input.pointer.RIGHT, me.input.KEY.LEFT);
+    // create a new sprite with all animations from the paladin atlas
+    this.renderable = game.texture.createAnimationFromName()
 
-    me.input.bindGamepad(
-      0,
-      { type: 'buttons', code: me.input.GAMEPAD.BUTTONS.FACE_1 },
-      me.input.KEY.UP
-    )
-    me.input.bindGamepad(
-      0,
-      { type: 'buttons', code: me.input.GAMEPAD.BUTTONS.FACE_2 },
-      me.input.KEY.UP
-    )
-    me.input.bindGamepad(
-      0,
-      { type: 'buttons', code: me.input.GAMEPAD.BUTTONS.DOWN },
-      me.input.KEY.DOWN
-    )
-    me.input.bindGamepad(
-      0,
-      { type: 'buttons', code: me.input.GAMEPAD.BUTTONS.FACE_3 },
-      me.input.KEY.DOWN
-    )
-    me.input.bindGamepad(
-      0,
-      { type: 'buttons', code: me.input.GAMEPAD.BUTTONS.FACE_4 },
-      me.input.KEY.DOWN
-    )
-    me.input.bindGamepad(
-      0,
-      { type: 'buttons', code: me.input.GAMEPAD.BUTTONS.LEFT },
-      me.input.KEY.LEFT
-    )
-    me.input.bindGamepad(
-      0,
-      { type: 'buttons', code: me.input.GAMEPAD.BUTTONS.RIGHT },
-      me.input.KEY.RIGHT
-    )
-
-    // map axes
-    me.input.bindGamepad(
-      0,
-      { type: 'axes', code: me.input.GAMEPAD.AXES.LX, threshold: -0.5 },
-      me.input.KEY.LEFT
-    )
-    me.input.bindGamepad(
-      0,
-      { type: 'axes', code: me.input.GAMEPAD.AXES.LX, threshold: 0.5 },
-      me.input.KEY.RIGHT
-    )
-    me.input.bindGamepad(
-      0,
-      { type: 'axes', code: me.input.GAMEPAD.AXES.LY, threshold: -0.5 },
-      me.input.KEY.UP
-    )
-
-    this.renderable = new me.Sprite(x, y, {
-      image: me.loader.getImage('character'),
-      framewidth: 16,
-      frameheight: 16,
-    })
-
-    this.renderable.addAnimation('walk', [0, 1, 2, 3], 100)
-    this.renderable.addAnimation('stand', [0])
-    this.renderable.addAnimation('jump', [4])
-
-    this.scale(4)
-
-    this.renderable.setCurrentAnimation('stand')
-
-    // set the renderable position to bottom center
-    this.anchorPoint.set(10, 10)
+    this.anchorPoint.set(0.5, 0.5) // ancre en haut/milieu
+    // this.renderable.setCurrentAnimation('stand')
   }
 
   /**
    ** update the force applied
    */
   update(dt) {
+    if (me.input.isKeyPressed('shoot')) {
+      this.isShooting = true
+      const laserX = this.facingRight
+        ? this.getBounds().right
+        : this.getBounds().left - LASER_SIZE.WIDTH
+      const laserY = this.pos.y + this.height / 2 - LASER_SIZE.HEIGHT / 2
+      this.renderable.setCurrentAnimation('launch', (ctx) => {
+        me.game.world.addChild(
+          me.pool.pull('poop', laserX, laserY, this.facingRight)
+        )
+        console.log('launching poop', ctx)
+        this.isShooting = false
+      })
+    }
+
     if (me.input.isKeyPressed('left')) {
       if (this.body.vel.y === 0) {
+        //@ts-ignore
         this.renderable.setCurrentAnimation('walk')
       }
       this.body.force.x = -this.body.maxVel.x
       this.renderable.flipX(true)
+      this.facingRight = false
     } else if (me.input.isKeyPressed('right')) {
       if (this.body.vel.y === 0) {
+        //@ts-ignore
         this.renderable.setCurrentAnimation('walk')
       }
+      this.facingRight = true
       this.body.force.x = this.body.maxVel.x
       this.renderable.flipX(false)
     }
 
     if (me.input.isKeyPressed('jump')) {
+      //@ts-ignore
       this.renderable.setCurrentAnimation('jump')
+
       this.body.jumping = true
+
       if (this.multipleJump <= 2) {
         // easy "math" for double jump
         this.body.force.y = -this.body.maxVel.y * this.multipleJump++
@@ -144,12 +102,18 @@ class PlayerEntity extends me.Entity {
         this.multipleJump = 1
       } else if (this.body.falling && this.multipleJump < 2) {
         // reset the multipleJump flag if falling
-        this.multipleJump = 2
+        this.multipleJump = 1
       }
     }
 
-    if (this.body.force.x === 0 && this.body.force.y === 0) {
-      this.renderable.setCurrentAnimation('stand')
+    if (
+      this.body.force.x === 0 &&
+      this.body.force.y === 0 &&
+      !this.isShooting
+    ) {
+      if (!this.renderable.isCurrentAnimation('stand')) {
+        this.renderable.setCurrentAnimation('stand')
+      }
     }
 
     // check if we fell into a hole
@@ -157,25 +121,20 @@ class PlayerEntity extends me.Entity {
       // if yes reset the game
       me.game.world.removeChild(this)
       me.game.viewport.fadeIn('#fff', 150, function () {
-        me.audio.play('die', false)
+        //  me.audio.play("die", false);
         me.level.reload()
         me.game.viewport.fadeOut('#fff', 150)
       })
       return true
     }
 
-    // check if we moved (an "idle" animation would definitely be cleaner)
-    if (
-      this.body.vel.x !== 0 ||
-      this.body.vel.y !== 0 ||
-      (this.renderable && this.renderable.isFlickering())
-    ) {
-      super.update(dt)
-      return true
-    }
-    return false
+    // Pour le stand
+    return super.update(dt) || this.body.vel.x !== 0 || this.body.vel.y !== 0
   }
 
+  draw(renderer) {
+    super.draw(renderer)
+  }
   /**
    * colision handler
    */
@@ -194,7 +153,7 @@ class PlayerEntity extends me.Entity {
           ) {
             // Disable collision on the x axis
             response.overlapV.x = 0
-            // Repond to the platform (it is solid)
+            // Respond to the platform (it is solid)
             return true
           }
           // Do not respond to the platform (pass through)
@@ -216,7 +175,7 @@ class PlayerEntity extends me.Entity {
         if (!other.isMovingEnemy) {
           // spike or any other fixed danger
           this.body.vel.y -= this.body.maxVel.y * me.timer.tick
-          this.hurt()
+          //  this.hurt();
         } else {
           // a regular moving enemy entity
           if (response.overlapV.y > 0 && this.body.falling) {
@@ -238,26 +197,4 @@ class PlayerEntity extends me.Entity {
     // Make the object solid
     return true
   }
-
-  /**
-   * ouch
-   */
-  hurt() {
-    var sprite = this.renderable
-
-    if (!sprite.isFlickering()) {
-      // tint to red and flicker
-      sprite.tint.setColor(255, 192, 192)
-      sprite.flicker(750, function () {
-        // clear the tint once the flickering effect is over
-        sprite.tint.setColor(255, 255, 255)
-      })
-
-      // flash the screen
-      me.game.viewport.fadeIn('#FFFFFF', 75)
-      me.audio.play('die', false)
-    }
-  }
 }
-
-export default PlayerEntity

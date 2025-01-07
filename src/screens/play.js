@@ -1,59 +1,23 @@
 import * as me from 'melonjs'
+import { Player } from '../entities/player';
+import { Terminator } from '../entities/terminator';
+import Poop from '../entities/poop';
 
-import game from './../game.js'
-import VirtualJoypad from './../entities/controls.js'
-import UIContainer from './../entities/HUD.js'
-import PlayerEntity from '../entities/player.js'
-
-class PlayScreen extends me.Stage {
+export class PlayScreen extends me.Stage {
   /**
    *  action to perform on state change
    */
   onResetEvent() {
-    // load a level
-    me.level.load('map1')
+    me.level.load("level1");
 
-    // reset the score
-    game.data.score = 0
+    me.game.world.addChild(new me.ColorLayer("background", "#000033"), 0);
 
-    // add our HUD to the game world
-    if (typeof this.HUD === 'undefined') {
-      this.HUD = new UIContainer()
-    }
-    me.game.world.addChild(this.HUD)
-    me.game.world.addChild(new PlayerEntity(), 2)
+    me.game.world.addChild(new Player(0, 280), 1);
 
-    // display if debugPanel is enabled or on mobile
-    if (
-      (me.plugin.cache.debugPanel &&
-        me.plugin.cache.debugPanel.panel.visible) ||
-      me.device.touch
-    ) {
-      if (typeof this.virtualJoypad === 'undefined') {
-        this.virtualJoypad = new VirtualJoypad()
-      }
-      me.game.world.addChild(this.virtualJoypad)
-    }
+    me.game.world.addChild(new Terminator(100, 280), 1);
 
-    // play some music
-    me.audio.playTrack('dst-gameforest')
-  }
+    // me.game.world.addChild(new Terminator(300, 192), 1);
+    // me.game.world.addChild(new Terminator(310, 192), 1);
 
-  /**
-   *  action to perform on state change
-   */
-  onDestroyEvent() {
-    // remove the HUD from the game world
-    me.game.world.removeChild(this.HUD)
-
-    // remove the joypad if initially added
-    if (this.virtualJoypad && me.game.world.hasChild(this.virtualJoypad)) {
-      me.game.world.removeChild(this.virtualJoypad)
-    }
-
-    // stop some music
-    me.audio.stopTrack('dst-gameforest')
   }
 }
-
-export default PlayScreen
