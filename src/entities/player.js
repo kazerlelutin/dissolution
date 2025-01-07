@@ -135,6 +135,10 @@ export class Player extends me.Entity {
   draw(renderer) {
     super.draw(renderer)
   }
+
+  hurt() {
+    console.log('ouch', 'TODO: implement hurt logic')
+  }
   /**
    * colision handler
    */
