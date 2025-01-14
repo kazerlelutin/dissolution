@@ -91,6 +91,7 @@ export class Poop extends me.Entity {
       this.isOnTheFloor = true
       this.body.collisionType = me.collision.types.NO_OBJECT
       this.body.gravityScale = 0
+
       me.audio.stop('poop_ground')
       me.audio.play('poop_ground', false)
 

@@ -11,8 +11,10 @@ export class Player extends me.Entity {
     // call the super constructor
     super(x, y, { width: 32, height: 32 })
 
+    this.projectDialCount = 0
     this.facingRight = true
 
+    this.invincible = false
     this.body.collisionType = me.collision.types.PLAYER_OBJECT
 
     this.alwaysUpdate = true
@@ -52,7 +54,15 @@ export class Player extends me.Entity {
    */
   update(dt) {
     if (me.input.isKeyPressed('shoot')) {
-      this.isShooting = true
+      this.projectDialCount++
+
+      if (this.projectDialCount > 10) {
+        me.audio.stop('projet')
+        me.audio.play('projet', false)
+        this.projectDialCount = 0
+      }
+
+      this.isNotStand = true
       const laserX = this.facingRight
         ? this.getBounds().right
         : this.getBounds().left - LASER_SIZE.WIDTH
@@ -62,7 +72,7 @@ export class Player extends me.Entity {
           me.pool.pull('poop', laserX, laserY, this.facingRight)
         )
         console.log('launching poop', ctx)
-        this.isShooting = false
+        this.isNotStand = false
       })
     }
 
@@ -85,6 +95,7 @@ export class Player extends me.Entity {
     }
 
     if (me.input.isKeyPressed('jump')) {
+      if (this.body.jumping || this.body.falling) return
       //@ts-ignore
       this.renderable.setCurrentAnimation('jump')
 
@@ -92,7 +103,9 @@ export class Player extends me.Entity {
 
       if (this.multipleJump <= 2) {
         // easy "math" for double jump
-        this.body.force.y = -this.body.maxVel.y * this.multipleJump++
+        this.body.force.y = -this.body.maxVel.y
+
+        // LE SON
         me.audio.stop('jump')
         me.audio.play('jump', false)
       }
@@ -109,7 +122,7 @@ export class Player extends me.Entity {
     if (
       this.body.force.x === 0 &&
       this.body.force.y === 0 &&
-      !this.isShooting
+      !this.isNotStand
     ) {
       if (!this.renderable.isCurrentAnimation('stand')) {
         this.renderable.setCurrentAnimation('stand')
@@ -137,7 +150,14 @@ export class Player extends me.Entity {
   }
 
   hurt() {
-    console.log('ouch', 'TODO: implement hurt logic')
+    if (this.invincible) return
+    this.invincible = true
+    me.audio.stop('hurt')
+    me.audio.play('hurt', false)
+    this.renderable.setCurrentAnimation('hurt', (ctx) => {})
+    me.timer.setTimeout(() => {
+      this.invincible = false
+    }, 1000)
   }
   /**
    * colision handler
@@ -177,14 +197,19 @@ export class Player extends me.Entity {
 
       case me.collision.types.ENEMY_OBJECT:
         if (!other.isMovingEnemy) {
-          // spike or any other fixed danger
-          this.body.vel.y -= this.body.maxVel.y * me.timer.tick
-          //  this.hurt();
+          // sens
+          if (this.pos.x < other.pos.x) {
+            this.body.vel.x = -175 * me.timer.tick
+          } else {
+            this.body.vel.x = 175 * me.timer.tick
+          }
+
+          this.hurt()
         } else {
           // a regular moving enemy entity
           if (response.overlapV.y > 0 && this.body.falling) {
             // jump
-            this.body.vel.y -= this.body.maxVel.y * 1.5 * me.timer.tick
+            //  this.body.vel.y -= this.body.maxVel.y * 1.5 * me.timer.tick
           } else {
             this.hurt()
           }

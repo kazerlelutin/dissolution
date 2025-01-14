@@ -23,6 +23,10 @@ me.device.onReady(() => {
     me.pool.register('terminator', Terminator)
     me.pool.register('poop', Poop)
 
+    game.hud = new me.TextureAtlas(
+      me.loader.getJSON('tileset'),
+      me.loader.getImage('tileset')
+    )
     game.texture = new me.TextureAtlas(
       me.loader.getJSON('mcsquare'),
       me.loader.getImage('mcsquare')

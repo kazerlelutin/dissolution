@@ -37,7 +37,7 @@ export class Terminator extends me.Entity {
     // create a new sprite with all animations from the paladin atlas
     this.renderable = this.texture.createAnimationFromName()
     //@ts-ignore
-    this.renderable.setCurrentAnimation('walk')
+    this.renderable.setCurrentAnimation('stand')
     this.renderable.flipX(true)
 
     this.anchorPoint.set(0.5, 0.5) // ancre en haut/milieu
@@ -90,6 +90,17 @@ export class Terminator extends me.Entity {
       this.hurt = true
     }
 
+    if (other.body.collisionType === me.collision.types.PLAYER_OBJECT) {
+      // spike or any other fixed danger
+
+      // sens
+      if (this.pos.x < other.pos.x) {
+        this.body.vel.x = -300 * me.timer.tick
+      } else {
+        this.body.vel.x = 300 * me.timer.tick
+      }
+    }
+
     if (
       (this.alive && response.overlapV.y > 0 && response.a.body.falling) ||
       this.hurt
@@ -99,27 +110,38 @@ export class Terminator extends me.Entity {
       //avoid further collision and delete it
       this.body.setCollisionMask(me.collision.types.NO_OBJECT)
       // make the body static
-      this.body.setStatic(true)
+      // sens
+      if (this.pos.x < other.pos.x) {
+        this.body.vel.x = -700 * me.timer.tick
+      } else {
+        this.body.vel.x = 700 * me.timer.tick
+      }
       // set dead animation
-      this.renderable.setCurrentAnimation('walk')
 
       var emitter = new me.ParticleEmitter(this.centerX, this.centerY, {
-        width: this.width / 4,
-        height: this.height / 4,
-        tint: this.particleTint,
-        totalParticles: 32,
-        angle: 0,
-        angleVariation: 6.283185307179586,
+        width: this.width / 8,
+        height: this.height / 8,
+        totalParticles: 38,
+        angle: Math.PI, // Angle vers l'arrière
+        angleVariation: Math.PI / 8, // Variation de l'angle pour un petit écart
         maxLife: 5,
-        speed: 3,
+        speed: 0.2, // Vitesse réduite
+        gravity: 0.3, // Augmente la gravité pour une trajectoire parabolique
+        acceleration: { x: -200, y: 30 }, // Accélération vers le bas et légèrement vers l'arrière
+        tint: '#ff0000',
       })
 
-      me.game.world.addChild(emitter, this.pos.z)
-      me.game.world.removeChild(this)
-      emitter.burstParticles()
-
       // dead sfx
-      me.audio.play('explosion', false)
+
+      me.audio.play('outch', false)
+
+      me.timer.setTimeout(() => {
+        me.audio.play('explosion', false)
+        me.game.world.addChild(emitter, this.pos.z)
+        me.game.world.removeChild(this)
+        emitter.burstParticles()
+      }, 500)
+
       // give some score
       game.data.score += 150
     }
